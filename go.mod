@@ -1,6 +1,6 @@
 module github.com/maxskaink/proyect01-api-go
 
-go 1.23.1
+go 1.23
 
 require (
 	github.com/google/uuid v1.6.0 // indirect

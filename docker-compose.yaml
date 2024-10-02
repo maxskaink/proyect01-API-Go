@@ -1,0 +1,11 @@
+services:
+  proyect01-api-go:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: proyect01-api-go
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    command: ["air", "run", "-c", ".air.toml"]

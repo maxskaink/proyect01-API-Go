@@ -115,3 +115,33 @@ func GetTotalUsers() (int, error) {
 	}
 	return int(total), nil
 }
+
+func LogInUser(email string, password string) (string, error) {
+
+	if !utils.IsEmail(email) {
+		return "", fmt.Errorf("EMAIL IS REQUIRED AN VALID")
+	}
+
+	response := collectionUsers.FindOne(context.Background(), bson.M{
+		"email":    email,
+		"password": utils.GetHash(password),
+	})
+	if response.Err() != nil {
+		return "", response.Err()
+	}
+
+	userToLogin := new(models.User)
+
+	err := response.Decode(&userToLogin)
+
+	if err != nil {
+		return "", err
+	}
+
+	jwt, err := userToLogin.CreateJWT()
+
+	if err != nil {
+		return "", err
+	}
+	return jwt, nil
+}

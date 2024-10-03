@@ -105,3 +105,36 @@ func GetAllUsers(c *fiber.Ctx) error {
 
 	return c.Status(200).JSON(response)
 }
+
+func LogInUser(c *fiber.Ctx) error {
+	credential := new(dto.Credential)
+
+	if err := c.BodyParser(credential); err != nil {
+		return c.Status(400).JSON(dto.Error{
+			Message:   "Error parsing body",
+			Status:    400,
+			TypeError: "Invalid sintaxis",
+		})
+	}
+	if credential.Email == "" || credential.Password == "" {
+		return c.Status(400).JSON(dto.Error{
+			Message:   "Email and password are required",
+			Status:    400,
+			TypeError: "Invalid data",
+		})
+	}
+
+	token, err := services.LogInUser(credential.Email, credential.Password)
+
+	if err != nil {
+		return c.Status(401).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    401,
+			TypeError: "Unauthorized",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"token": token,
+	})
+}

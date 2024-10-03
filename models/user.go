@@ -2,7 +2,9 @@ package models
 
 import (
 	"errors"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/maxskaink/proyect01-api-go/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -32,4 +34,14 @@ func (u *User) ValidateToCreate() error {
 	}
 
 	return nil
+}
+
+func (u *User) CreateJWT() (string, error) {
+	claims := jwt.MapClaims{
+		"name":  u.Name,
+		"email": u.Email,
+		"exp":   time.Now().Add(time.Hour * 12).Unix(),
+	}
+
+	return utils.CreateJWT(claims)
 }

@@ -1,9 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"os"
+
+	"github.com/maxskaink/proyect01-api-go/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -11,15 +13,18 @@ import (
 )
 
 func main() {
+	loadENV()
+	client := services.InitDataBase()
+	defer client.Disconnect(context.Background())
 	app := fiber.New()
 
 	// Routes
 	routes.APIRoutes(app)
+	routes.UserRoutes(app)
 
 	// Init API
-	loadENV()
 	PORT_API := os.Getenv("PORT_API")
-	fmt.Println("Server running on port: " + PORT_API)
+
 	log.Fatal(app.Listen(":" + PORT_API))
 }
 

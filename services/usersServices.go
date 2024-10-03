@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/maxskaink/proyect01-api-go/models"
+	"github.com/maxskaink/proyect01-api-go/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,6 +36,17 @@ func InitDataBase() *mongo.Client {
 
 	fmt.Println("Connected to MongoDB")
 	collectionUsers = client.Database("users_manager").Collection("clients")
+
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{"email": 1}, // Índice en el campo Email
+		Options: options.Index().SetUnique(true),
+	}
+
+	_, err = collectionUsers.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return client
 }
 
@@ -43,6 +56,10 @@ func CreateUser(newUser *models.User) (models.User, error) {
 		return *newUser, err
 	}
 
+	newUser.Password = utils.GetHash(newUser.Password)
+	newUser.IsActive = true
+	newUser.LastSession = primitive.NewDateTimeFromTime(time.Now())
+
 	insertResult, err := collectionUsers.InsertOne(context.Background(), newUser)
 
 	if err != nil {
@@ -50,13 +67,15 @@ func CreateUser(newUser *models.User) (models.User, error) {
 	}
 
 	newUser.ID = insertResult.InsertedID.(primitive.ObjectID)
-
+	newUser.Password = ""
 	return *newUser, nil
 }
 
 func GetAllUsers() ([]models.User, error) {
 	var users []models.User
-	cursor, err := collectionUsers.Find(context.Background(), bson.M{})
+	cursor, err := collectionUsers.Find(context.Background(), bson.M{
+		"isActive": true,
+	})
 	if err != nil {
 		fmt.Println(err)
 		return users, err
@@ -69,6 +88,8 @@ func GetAllUsers() ([]models.User, error) {
 		if err := cursor.Decode(&user); err != nil {
 			return users, err
 		}
+		user.Password = ""
+		user.IsActive = false
 		users = append(users, user)
 	}
 	return users, nil

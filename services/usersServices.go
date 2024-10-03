@@ -71,11 +71,22 @@ func CreateUser(newUser *models.User) (models.User, error) {
 	return *newUser, nil
 }
 
-func GetAllUsers() ([]models.User, error) {
+func GetAllUsers(page int, maxUsers int) ([]models.User, error) {
+	if page <= 0 || maxUsers <= 0 {
+		return []models.User{}, nil
+	}
+
 	var users []models.User
+
+	offset := (page - 1) * maxUsers
+
+	findOption := options.Find()
+	findOption.SetLimit(int64(maxUsers))
+	findOption.SetSkip(int64(offset))
+
 	cursor, err := collectionUsers.Find(context.Background(), bson.M{
 		"isActive": true,
-	})
+	}, findOption)
 	if err != nil {
 		fmt.Println(err)
 		return users, err
@@ -93,4 +104,14 @@ func GetAllUsers() ([]models.User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func GetTotalUsers() (int, error) {
+	total, err := collectionUsers.CountDocuments(context.Background(), bson.M{
+		"isActive": true,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return int(total), nil
 }

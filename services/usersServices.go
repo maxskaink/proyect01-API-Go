@@ -106,6 +106,30 @@ func GetAllUsers(page int, maxUsers int) ([]models.User, error) {
 	return users, nil
 }
 
+func GetUserByID(id string) (models.User, error) {
+	user := new(models.User)
+	objectID, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
+		return *user, err
+	}
+
+	response := collectionUsers.FindOne(context.Background(), bson.M{
+		"_id": objectID,
+	})
+
+	if response.Err() != nil {
+		return *user, response.Err()
+	}
+	err = response.Decode(user)
+
+	if err != nil {
+		return *user, err
+	}
+
+	return *user, nil
+}
+
 func GetTotalUsers() (int, error) {
 	total, err := collectionUsers.CountDocuments(context.Background(), bson.M{
 		"isActive": true,
@@ -144,4 +168,35 @@ func LogInUser(email string, password string) (string, error) {
 		return "", err
 	}
 	return jwt, nil
+}
+func ReplaceUser(newUser *models.User, id string) (models.User, error) {
+	if err := newUser.ValidateToUpdate(); err != nil {
+		return *newUser, err
+	}
+
+	ObjectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return *newUser, err
+	}
+
+	newUser.ID = ObjectId
+	newUser.Password = utils.GetHash(newUser.Password)
+	newUser.IsActive = true
+
+	response := collectionUsers.FindOneAndReplace(context.Background(), bson.M{
+		"_id": ObjectId,
+	}, newUser)
+
+	if response.Err() != nil {
+		return *newUser, response.Err()
+	}
+
+	oldUser := new(models.User)
+	err = response.Decode(oldUser)
+
+	if err != nil {
+		return *newUser, err
+	}
+
+	return *oldUser, err
 }

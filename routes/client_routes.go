@@ -14,18 +14,6 @@ func UserRoutes(app *fiber.App) {
 
 	api.Use(auth.UserAuth())
 
-	//TODO borrar esto
-	api.Get("/users/info", func(c *fiber.Ctx) error {
-		name, ok := c.Locals("name").(string)
-		if !ok {
-			return c.Status(400).JSON(fiber.Map{
-				"message": "Error getting email",
-			})
-		}
-		return c.SendString("Hello, World! " + name)
-	})
-
-	api.Get("/users/:_id", func(c *fiber.Ctx) error {
-		return c.SendStatus(201)
-	})
+	api.Get("/users/:id", controllers.GetUserbyID)
+	api.Put("/users/:id", controllers.UpdateUser)
 }

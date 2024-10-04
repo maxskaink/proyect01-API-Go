@@ -36,6 +36,13 @@ func (u *User) ValidateToCreate() error {
 	return nil
 }
 
+func (u *User) ValidateToUpdate() error {
+	if u.ID != primitive.NilObjectID {
+		return errors.New("ID MUST BE EMPTY")
+	}
+	return u.ValidateToCreate()
+}
+
 func (u *User) CreateJWT() (string, error) {
 	claims := jwt.MapClaims{
 		"name":  u.Name,

@@ -138,3 +138,78 @@ func LogInUser(c *fiber.Ctx) error {
 		"token": token,
 	})
 }
+
+func GetUserbyID(c *fiber.Ctx) error {
+	idToSearch := c.Params("id")
+	if idToSearch == "" {
+		return c.SendStatus(fiber.ErrBadRequest.Code)
+	}
+
+	foundUser, err := services.GetUserByID(idToSearch)
+
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error",
+		})
+	}
+
+	if foundUser.Email != c.Locals("email") {
+		return c.Status(fiber.StatusUnauthorized).JSON(dto.Error{
+			Message:   "Not auhorized, to get information of this user",
+			Status:    fiber.StatusUnauthorized,
+			TypeError: "Unahorized",
+		})
+	}
+
+	return c.Status(200).JSON(foundUser)
+}
+
+func UpdateUser(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	newUser := new(models.User)
+
+	err := c.BodyParser(newUser)
+
+	if err != nil {
+		return c.Status(400).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    400,
+			TypeError: "Invalid Body",
+		})
+	}
+
+	userDB, err := services.GetUserByID(idStr)
+
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error",
+		})
+	}
+
+	if userDB.Email != c.Locals("email") {
+		return c.Status(fiber.StatusUnauthorized).JSON(dto.Error{
+			Message:   "Not authorized for the update",
+			Status:    fiber.StatusUnauthorized,
+			TypeError: "Client error",
+		})
+	}
+
+	oldUser, err := services.ReplaceUser(newUser, idStr)
+
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error",
+		})
+	}
+	return c.Status(200).JSON(fiber.Map{
+		"status":  "ok",
+		"oldUser": oldUser,
+	})
+
+}

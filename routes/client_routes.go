@@ -6,6 +6,8 @@ import (
 	"github.com/maxskaink/proyect01-api-go/middlewares/auth"
 )
 
+// UserRoutes asign the routes for the users
+// each route have a controller
 func UserRoutes(app *fiber.App) {
 	api := app.Group("/api")
 	api.Get("/users", controllers.GetAllUsers)

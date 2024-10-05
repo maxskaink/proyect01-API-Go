@@ -9,6 +9,9 @@ import (
 	"github.com/maxskaink/proyect01-api-go/services"
 )
 
+// CreateUser handle the endpoint for create and user
+// validate the information and use the service to create
+// and save in the database de information.
 func CreateUser(c *fiber.Ctx) error {
 	newUser := new(models.User)
 	if err := c.BodyParser(newUser); err != nil {
@@ -38,6 +41,8 @@ func CreateUser(c *fiber.Ctx) error {
 	return c.Status(201).JSON(userCreated)
 }
 
+// GetAllUsers handle the endpoint for get some users
+// with the specifications of the user
 func GetAllUsers(c *fiber.Ctx) error {
 	//Sacmos la info de querys y validamos
 	querys := c.Queries()
@@ -106,6 +111,8 @@ func GetAllUsers(c *fiber.Ctx) error {
 	return c.Status(200).JSON(response)
 }
 
+// LogInUser handle the endpoint for login an user
+// returning in a json a JWT
 func LogInUser(c *fiber.Ctx) error {
 	credential := new(dto.Credential)
 
@@ -139,6 +146,8 @@ func LogInUser(c *fiber.Ctx) error {
 	})
 }
 
+// GetUserbyID hanlde the endpoint for get all the information
+// of an specific user, it mus be have and jwt
 func GetUserbyID(c *fiber.Ctx) error {
 	idToSearch := c.Params("id")
 	if idToSearch == "" {
@@ -166,6 +175,8 @@ func GetUserbyID(c *fiber.Ctx) error {
 	return c.Status(200).JSON(foundUser)
 }
 
+// UpdateUser handle the nedpoint for update all the information
+// of the user, the user must be have an JWT
 func UpdateUser(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	newUser := new(models.User)

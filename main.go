@@ -12,6 +12,9 @@ import (
 	"github.com/maxskaink/proyect01-api-go/routes"
 )
 
+// main entry point for mi API rest aplication
+// get de eviroment variables, connect with de database
+// get de routes for de api and init the litening of the API
 func main() {
 	loadENV()
 	client := services.InitDataBase()
@@ -28,6 +31,8 @@ func main() {
 	log.Fatal(app.Listen(":" + PORT_API))
 }
 
+// loadENV get to the so variable, all the enviroments variables
+// of the .env file
 func loadENV() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")

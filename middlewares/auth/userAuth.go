@@ -8,6 +8,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// UserAuth Its a middleware for validate if the actual http query
+// have the jwt to make an secure secion
 func UserAuth() fiber.Handler {
 	key := os.Getenv("JWT_SECRET")
 	return jwtware.New(jwtware.Config{

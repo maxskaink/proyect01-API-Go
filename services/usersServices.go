@@ -17,6 +17,9 @@ import (
 
 var collectionUsers *mongo.Collection
 
+// InitDataBase the initializate the conections with the mongo database.
+// create the collections of the document for persistence
+// it also, create some rules for the database
 func InitDataBase() *mongo.Client {
 	MONGO_URI := os.Getenv("MONGO_URI")
 
@@ -50,6 +53,9 @@ func InitDataBase() *mongo.Client {
 	return client
 }
 
+// CreateUser create the newUser validating the information of the structure
+// if it is validate, create the users on the data base
+// return error if is any error in the process
 func CreateUser(newUser *models.User) (models.User, error) {
 
 	if err := newUser.ValidateToCreate(); err != nil {
@@ -71,6 +77,8 @@ func CreateUser(newUser *models.User) (models.User, error) {
 	return *newUser, nil
 }
 
+// GetAllUsers obtains as maxUsers active users of the database
+// and a part of the segmen users. iF its any error it will be returned
 func GetAllUsers(page int, maxUsers int) ([]models.User, error) {
 	if page <= 0 || maxUsers <= 0 {
 		return []models.User{}, nil
@@ -106,6 +114,9 @@ func GetAllUsers(page int, maxUsers int) ([]models.User, error) {
 	return users, nil
 }
 
+// GetUserByID obtains a users searching by ID
+// if it doesnt exist return an error, but if it exist
+// return de struct of the user
 func GetUserByID(id string) (models.User, error) {
 	user := new(models.User)
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -130,6 +141,8 @@ func GetUserByID(id string) (models.User, error) {
 	return *user, nil
 }
 
+// GetTotalUsers obtains the total of active user in the database
+// just return a number, and if its any error it also return it
 func GetTotalUsers() (int, error) {
 	total, err := collectionUsers.CountDocuments(context.Background(), bson.M{
 		"isActive": true,
@@ -140,6 +153,8 @@ func GetTotalUsers() (int, error) {
 	return int(total), nil
 }
 
+// LoginUser verify if the email and password match, if it doesnt, it return an error
+// but if its correct, it return a Json Web Token with name and email information
 func LogInUser(email string, password string) (string, error) {
 
 	if !utils.IsEmail(email) {
@@ -169,6 +184,9 @@ func LogInUser(email string, password string) (string, error) {
 	}
 	return jwt, nil
 }
+
+// ReplaceUser update the user with the id, and return the old user
+// if is any problem it return it.
 func ReplaceUser(newUser *models.User, id string) (models.User, error) {
 	if err := newUser.ValidateToUpdate(); err != nil {
 		return *newUser, err

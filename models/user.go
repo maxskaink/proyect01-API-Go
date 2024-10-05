@@ -9,6 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// User represent the entity of Users, as json response or entity
+// for the database
 type User struct {
 	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name        string             `json:"name,omitempty" bson:"name"`
@@ -18,6 +20,8 @@ type User struct {
 	LastSession primitive.DateTime `json:"lastSession,omitempty" bson:"lastSession"`
 }
 
+// ValidateToCreate validate if the information of the struct
+// have the enough and correct data for been stored
 func (u *User) ValidateToCreate() error {
 
 	if u.Name == "" {
@@ -36,6 +40,8 @@ func (u *User) ValidateToCreate() error {
 	return nil
 }
 
+// ValidateToUpdate validate if the information of the struct
+// have the enough and correc data for been updated
 func (u *User) ValidateToUpdate() error {
 	if u.ID != primitive.NilObjectID {
 		return errors.New("ID MUST BE EMPTY")
@@ -43,6 +49,7 @@ func (u *User) ValidateToUpdate() error {
 	return u.ValidateToCreate()
 }
 
+// CreateJWT Generate a Json Web Token, with the name and email of the struct
 func (u *User) CreateJWT() (string, error) {
 	claims := jwt.MapClaims{
 		"name":  u.Name,

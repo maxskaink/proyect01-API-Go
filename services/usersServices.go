@@ -218,3 +218,53 @@ func ReplaceUser(newUser *models.User, id string) (models.User, error) {
 
 	return *oldUser, err
 }
+
+// UpdateUser update some values fo the info of some user
+// it also verify the information and if its correct, it will updated
+// reeturn the old user, if its any error it will be returned
+func UpdateUser(newUser *models.User, id string) (*models.User, error) {
+
+	ObjectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return newUser, err
+	}
+
+	updateData := make(map[string]interface{})
+
+	if newUser.Name != "" {
+		updateData["name"] = newUser.Name
+	}
+	if newUser.Email != "" {
+		updateData["email"] = newUser.Email
+	}
+	if newUser.Password != "" {
+		if len(newUser.Password) < 8 {
+			return newUser, fmt.Errorf("PASSWORD MUST BE AT LEAST 8 CHARACTERS")
+		}
+		updateData["password"] = utils.GetHash(newUser.Password)
+	}
+
+	if len(updateData) == 0 {
+		return newUser, fmt.Errorf("NO FIELD TO UPDATE")
+	}
+
+	update := bson.M{
+		"$set": updateData,
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.Before)
+
+	filter := bson.M{
+		"_id": ObjectID,
+	}
+
+	var oldUser = new(models.User)
+
+	err = collectionUsers.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(oldUser)
+
+	if err != nil {
+		return newUser, err
+	}
+
+	return oldUser, nil
+}

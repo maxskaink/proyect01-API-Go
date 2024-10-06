@@ -18,4 +18,5 @@ func UserRoutes(app *fiber.App) {
 
 	api.Get("/users/:id", controllers.GetUserbyID)
 	api.Put("/users/:id", controllers.UpdateUser)
+	api.Patch("/users/:id", controllers.PatchUser)
 }

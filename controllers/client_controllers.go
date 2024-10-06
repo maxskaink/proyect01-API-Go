@@ -224,3 +224,50 @@ func UpdateUser(c *fiber.Ctx) error {
 	})
 
 }
+
+// PatchUser handle the endpoint for update some information of the user
+// the user must have a JWT, and the information to update must be in the body
+func PatchUser(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	newUser := new(models.User)
+
+	if err := c.BodyParser(newUser); err != nil {
+		return c.Status(400).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    400,
+			TypeError: "Invalid Body",
+		})
+	}
+
+	userDB, err := services.GetUserByID(idStr)
+
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error",
+		})
+	}
+
+	if userDB.Email != c.Locals("email") {
+		return c.Status(fiber.StatusUnauthorized).JSON(dto.Error{
+			Message:   "Not authorized for the update",
+			Status:    fiber.StatusUnauthorized,
+			TypeError: "Client error",
+		})
+	}
+
+	oldUser, err := services.UpdateUser(newUser, idStr)
+
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error",
+		})
+	}
+	oldUser.Password = ""
+
+	return c.Status(200).JSON(oldUser)
+
+}

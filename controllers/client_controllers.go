@@ -257,7 +257,7 @@ func PatchUser(c *fiber.Ctx) error {
 		})
 	}
 
-	oldUser, err := services.UpdateUser(newUser, idStr)
+	oldUser, err := services.UpdateUserById(newUser, idStr)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -270,4 +270,39 @@ func PatchUser(c *fiber.Ctx) error {
 
 	return c.Status(200).JSON(oldUser)
 
+}
+
+// DeleteUser handle the enpoint for update the state of isActive to false
+// if its any error it will return error
+func DeleteUser(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+
+	userDB, err := services.GetUserByID(idStr)
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error getting user",
+		})
+	}
+
+	if userDB.Email != c.Locals("email") {
+		return c.Status(401).JSON(dto.Error{
+			Message:   "You are not authorized",
+			Status:    401,
+			TypeError: "Unathorized for this action",
+		})
+	}
+
+	deletedUser, err := services.DeleteUserById(idStr)
+
+	if err != nil {
+		return c.Status(500).JSON(dto.Error{
+			Message:   err.Error(),
+			Status:    500,
+			TypeError: "Internal error",
+		})
+	}
+
+	return c.Status(200).JSON(deletedUser)
 }

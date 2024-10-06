@@ -219,10 +219,10 @@ func ReplaceUser(newUser *models.User, id string) (models.User, error) {
 	return *oldUser, err
 }
 
-// UpdateUser update some values fo the info of some user
+// UpdateUserById update some values fo the info of some user
 // it also verify the information and if its correct, it will updated
 // reeturn the old user, if its any error it will be returned
-func UpdateUser(newUser *models.User, id string) (*models.User, error) {
+func UpdateUserById(newUser *models.User, id string) (*models.User, error) {
 
 	ObjectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -267,4 +267,31 @@ func UpdateUser(newUser *models.User, id string) (*models.User, error) {
 	}
 
 	return oldUser, nil
+}
+
+// DeleteUserById update de statate of the user isAvtive to false
+// it woul return the user info and if its any error it will be returned
+func DeleteUserById(id string) (*models.User, error) {
+	ObjectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"isActive": false,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	filter := bson.M{
+		"_id": ObjectID,
+	}
+
+	var deletedUser = new(models.User)
+
+	err = collectionUsers.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(deletedUser)
+
+	return deletedUser, err
 }

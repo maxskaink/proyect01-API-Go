@@ -1,40 +1,24 @@
 package main
 
 import (
-	"context"
-	"log"
-	"os"
-
+	api "github.com/maxskaink/proyect01-api-go/API"
+	"github.com/maxskaink/proyect01-api-go/dataccess/repositories"
 	"github.com/maxskaink/proyect01-api-go/services"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
-	"github.com/maxskaink/proyect01-api-go/routes"
+	"github.com/maxskaink/proyect01-api-go/utils"
 )
 
 // main entry point for mi API rest aplication
 // get de eviroment variables, connect with de database
 // get de routes for de api and init the litening of the API
 func main() {
-	loadENV()
-	client := services.InitDataBase()
-	defer client.Disconnect(context.Background())
-	app := fiber.New()
+	utils.LoadENV()
 
-	// Routes
-	routes.APIRoutes(app)
-	routes.UserRoutes(app)
+	userRepository := repositories.NewUserMongoRepository()
+	userService := services.NewUsersService(userRepository)
 
-	// Init API
-	PORT_API := os.Getenv("PORT_API")
+	appAPI := api.NewAPI(userService)
+	defer userRepository.CloseClient()
 
-	log.Fatal(app.Listen(":" + PORT_API))
-}
+	appAPI.Listen()
 
-// loadENV get to the so variable, all the enviroments variables
-// of the .env file
-func loadENV() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
 }

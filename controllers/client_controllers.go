@@ -9,10 +9,20 @@ import (
 	"github.com/maxskaink/proyect01-api-go/services"
 )
 
+type ClientControllers struct {
+	UserService *services.UsersService
+}
+
+func NewClientControllers(service *services.UsersService) *ClientControllers {
+	return &ClientControllers{
+		UserService: service,
+	}
+}
+
 // CreateUser handle the endpoint for create and user
 // validate the information and use the service to create
 // and save in the database de information.
-func CreateUser(c *fiber.Ctx) error {
+func (clientC *ClientControllers) CreateUser(c *fiber.Ctx) error {
 	newUser := new(models.User)
 	if err := c.BodyParser(newUser); err != nil {
 		return c.Status(400).JSON(dto.Error{
@@ -30,7 +40,7 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	userCreated, err := services.CreateUser(newUser)
+	userCreated, err := clientC.UserService.CreateUser(newUser)
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
 			Message:   err.Error(),
@@ -43,7 +53,7 @@ func CreateUser(c *fiber.Ctx) error {
 
 // GetAllUsers handle the endpoint for get some users
 // with the specifications of the user
-func GetAllUsers(c *fiber.Ctx) error {
+func (clientC *ClientControllers) GetAllUsers(c *fiber.Ctx) error {
 	//Sacmos la info de querys y validamos
 	querys := c.Queries()
 
@@ -65,7 +75,7 @@ func GetAllUsers(c *fiber.Ctx) error {
 	}
 
 	//Sacmos los usuarios de la base de datos y validamos info
-	totalUsers, err := services.GetTotalUsers()
+	totalUsers, err := clientC.UserService.GetTotalUsers()
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -91,7 +101,7 @@ func GetAllUsers(c *fiber.Ctx) error {
 		})
 	}
 
-	users, err := services.GetAllUsers(page, per_page)
+	users, err := clientC.UserService.GetAllUsers(page, per_page)
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
 			Message:   err.Error(),
@@ -113,7 +123,7 @@ func GetAllUsers(c *fiber.Ctx) error {
 
 // LogInUser handle the endpoint for login an user
 // returning in a json a JWT
-func LogInUser(c *fiber.Ctx) error {
+func (clientC *ClientControllers) LogInUser(c *fiber.Ctx) error {
 	credential := new(dto.Credential)
 
 	if err := c.BodyParser(credential); err != nil {
@@ -131,7 +141,7 @@ func LogInUser(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := services.LogInUser(credential.Email, credential.Password)
+	token, err := clientC.UserService.LogInUser(credential.Email, credential.Password)
 
 	if err != nil {
 		return c.Status(401).JSON(dto.Error{
@@ -148,13 +158,13 @@ func LogInUser(c *fiber.Ctx) error {
 
 // GetUserbyID hanlde the endpoint for get all the information
 // of an specific user, it mus be have and jwt
-func GetUserbyID(c *fiber.Ctx) error {
+func (clientC *ClientControllers) GetUserbyID(c *fiber.Ctx) error {
 	idToSearch := c.Params("id")
 	if idToSearch == "" {
 		return c.SendStatus(fiber.ErrBadRequest.Code)
 	}
 
-	foundUser, err := services.GetUserByID(idToSearch)
+	foundUser, err := clientC.UserService.GetUserByID(idToSearch)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -177,7 +187,7 @@ func GetUserbyID(c *fiber.Ctx) error {
 
 // UpdateUser handle the nedpoint for update all the information
 // of the user, the user must be have an JWT
-func UpdateUser(c *fiber.Ctx) error {
+func (clientC *ClientControllers) UpdateUser(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	newUser := new(models.User)
 
@@ -191,7 +201,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	userDB, err := services.GetUserByID(idStr)
+	userDB, err := clientC.UserService.GetUserByID(idStr)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -209,7 +219,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	oldUser, err := services.ReplaceUser(newUser, idStr)
+	oldUser, err := clientC.UserService.ReplaceUser(newUser, idStr)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -227,7 +237,7 @@ func UpdateUser(c *fiber.Ctx) error {
 
 // PatchUser handle the endpoint for update some information of the user
 // the user must have a JWT, and the information to update must be in the body
-func PatchUser(c *fiber.Ctx) error {
+func (clientC *ClientControllers) PatchUser(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	newUser := new(models.User)
 
@@ -239,7 +249,7 @@ func PatchUser(c *fiber.Ctx) error {
 		})
 	}
 
-	userDB, err := services.GetUserByID(idStr)
+	userDB, err := clientC.UserService.GetUserByID(idStr)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -257,7 +267,7 @@ func PatchUser(c *fiber.Ctx) error {
 		})
 	}
 
-	oldUser, err := services.UpdateUserById(newUser, idStr)
+	oldUser, err := clientC.UserService.UpdateUserById(newUser, idStr)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
@@ -274,10 +284,10 @@ func PatchUser(c *fiber.Ctx) error {
 
 // DeleteUser handle the enpoint for update the state of isActive to false
 // if its any error it will return error
-func DeleteUser(c *fiber.Ctx) error {
+func (clientC *ClientControllers) DeleteUser(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 
-	userDB, err := services.GetUserByID(idStr)
+	userDB, err := clientC.UserService.GetUserByID(idStr)
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{
 			Message:   err.Error(),
@@ -294,7 +304,7 @@ func DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	deletedUser, err := services.DeleteUserById(idStr)
+	deletedUser, err := clientC.UserService.DeleteUserById(idStr)
 
 	if err != nil {
 		return c.Status(500).JSON(dto.Error{

@@ -3,10 +3,12 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
 	"net/mail"
 	"os"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
 // salt it are the salt for the passwords of the users
@@ -38,4 +40,12 @@ func CreateJWT(claims jwt.Claims) (string, error) {
 		return t, err
 	}
 	return t, nil
+}
+
+// loadENV get to the so variable, all the enviroments variables
+// of the .env file
+func LoadENV() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 }

@@ -163,6 +163,7 @@ func (mr *MongoUserRepository) GetUserByEmailAndPass(email string, password stri
 	response := mr.collectionUsers.FindOne(context.Background(), bson.M{
 		"email":    email,
 		"password": password,
+		"isActive": true,
 	})
 	if response.Err() != nil {
 		return &models.User{}, response.Err()

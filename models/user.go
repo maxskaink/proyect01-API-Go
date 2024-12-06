@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	custom_errors "github.com/maxskaink/proyect01-api-go/errors"
 	"github.com/maxskaink/proyect01-api-go/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -25,16 +26,28 @@ type User struct {
 func (u *User) ValidateToCreate() error {
 
 	if u.Name == "" {
-		return errors.New("NAME IS REQUIRED")
+		return custom_errors.NewInvalidFormat(
+			"NAME IS REQUIRED",
+			"NAME",
+		)
 	}
 	if !utils.IsEmail(u.Email) {
-		return errors.New("EMAIL IS REQUIRED AN DVALID")
+		return custom_errors.NewInvalidFormat(
+			"EMAIL IS INVALID",
+			"EMAIL",
+		)
 	}
 	if u.Password == "" {
-		return errors.New("PASSWORD IS REQUIRED")
+		return custom_errors.NewInvalidFormat(
+			"PASSWORD IS REQUIRED",
+			"PASSWORD",
+		)
 	}
 	if len(u.Password) < 8 {
-		return errors.New("PASSWORD MUST BE AT LEAST 8 CHARACTERS")
+		return custom_errors.NewInvalidFormat(
+			"PASSWORD MUST BE AT LEAST 8 CHARACTERS",
+			"PASSWORD",
+		)
 	}
 
 	return nil

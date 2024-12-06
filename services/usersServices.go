@@ -1,10 +1,10 @@
 package services
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/maxskaink/proyect01-api-go/dataccess"
+	custom_errors "github.com/maxskaink/proyect01-api-go/errors"
 	"github.com/maxskaink/proyect01-api-go/models"
 	"github.com/maxskaink/proyect01-api-go/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -71,7 +71,10 @@ func (us *UsersService) GetTotalUsers() (int, error) {
 func (us *UsersService) LogInUser(email string, password string) (string, error) {
 
 	if !utils.IsEmail(email) {
-		return "", fmt.Errorf("EMAIL IS REQUIRED AN VALID")
+		return "", custom_errors.NewInvalidFormat(
+			"EMAIL IS INVALID",
+			"EMAIL",
+		)
 	}
 
 	userToLogin, err := us.Repository.GetUserByEmailAndPass(email, utils.GetHash(password))
@@ -103,7 +106,10 @@ func (us *UsersService) ReplaceUser(newUser *models.User, id string) (models.Use
 func (us *UsersService) UpdateUserById(newUser *models.User, id string) (*models.User, error) {
 	if newUser.Password != "" {
 		if len(newUser.Password) < 8 {
-			return newUser, fmt.Errorf("PASSWORD MUST BE AT LEAST 8 CHARACTERS")
+			return newUser, custom_errors.NewInvalidFormat(
+				"PASSWORD MUST BE AT LEAST 8 CHARACTERS",
+				"PASSWORD",
+			)
 		}
 		newUser.Password = utils.GetHash(newUser.Password)
 	}

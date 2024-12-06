@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/maxskaink/proyect01-api-go/dataccess"
+	custom_errors "github.com/maxskaink/proyect01-api-go/errors"
 	"github.com/maxskaink/proyect01-api-go/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -69,11 +70,21 @@ func (mr *MongoUserRepository) CloseClient() {
 // CreateUser recive the newUser to be persisntace in de database
 // return the newUser and error if it exist
 func (mr *MongoUserRepository) CreateUser(newUser *models.User) (models.User, error) {
-
 	insertResult, err := mr.collectionUsers.InsertOne(context.Background(), newUser)
 
 	if err != nil {
-		return *newUser, err
+
+		if mongoErr, ok := err.(mongo.WriteException); ok {
+			for _, writeErr := range mongoErr.WriteErrors {
+				if writeErr.Code == 11000 {
+					return *newUser, custom_errors.NewDuplicateInformation(
+						fmt.Sprintf("The email %s already exist", newUser.Email),
+					)
+				}
+			}
+		}
+
+		return *newUser, custom_errors.NewInternalError(err.Error())
 	}
 
 	newUser.ID = insertResult.InsertedID.(primitive.ObjectID)
@@ -86,7 +97,11 @@ func (mr *MongoUserRepository) CreateUser(newUser *models.User) (models.User, er
 // a error if it exist
 func (mr *MongoUserRepository) GetAllUsers(page int, maxUsers int) ([]models.User, error) {
 	if page <= 0 || maxUsers <= 0 {
-		return []models.User{}, nil
+		customError := custom_errors.NewInvalidFormat(
+			"Page and maxUsers must be greater than 0",
+			"page and/or maxUsers",
+		)
+		return []models.User{}, customError
 	}
 
 	var users []models.User
@@ -101,7 +116,7 @@ func (mr *MongoUserRepository) GetAllUsers(page int, maxUsers int) ([]models.Use
 		"isActive": true,
 	}, findOption)
 	if err != nil {
-		return users, err
+		return users, custom_errors.NewInternalError(err.Error())
 	}
 
 	defer cursor.Close(context.Background())
@@ -109,7 +124,7 @@ func (mr *MongoUserRepository) GetAllUsers(page int, maxUsers int) ([]models.Use
 	for cursor.Next(context.Background()) {
 		var user models.User
 		if err := cursor.Decode(&user); err != nil {
-			return users, err
+			return users, custom_errors.NewInternalError(err.Error())
 		}
 		user.Password = ""
 		user.IsActive = false
@@ -125,7 +140,11 @@ func (mr *MongoUserRepository) GetUserByID(id string) (models.User, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 
 	if err != nil {
-		return *user, err
+		customError := custom_errors.NewInvalidFormat(
+			"Invalid ID",
+			"id",
+		)
+		return *user, customError
 	}
 
 	response := mr.collectionUsers.FindOne(context.Background(), bson.M{
@@ -133,12 +152,12 @@ func (mr *MongoUserRepository) GetUserByID(id string) (models.User, error) {
 	})
 
 	if response.Err() != nil {
-		return *user, response.Err()
+		return *user, custom_errors.NewInternalError(response.Err().Error())
 	}
 	err = response.Decode(user)
 
 	if err != nil {
-		return *user, err
+		return *user, custom_errors.NewInternalError(err.Error())
 	}
 
 	return *user, nil
@@ -151,7 +170,7 @@ func (mr *MongoUserRepository) GetTotalUsers() (int, error) {
 		"isActive": true,
 	})
 	if err != nil {
-		return 0, err
+		return 0, custom_errors.NewInternalError(err.Error())
 	}
 	return int(total), nil
 }
@@ -165,8 +184,9 @@ func (mr *MongoUserRepository) GetUserByEmailAndPass(email string, password stri
 		"password": password,
 		"isActive": true,
 	})
+
 	if response.Err() != nil {
-		return &models.User{}, response.Err()
+		return &models.User{}, custom_errors.NewNotFound("User not found")
 	}
 
 	userToLogin := new(models.User)
@@ -174,7 +194,7 @@ func (mr *MongoUserRepository) GetUserByEmailAndPass(email string, password stri
 	err := response.Decode(&userToLogin)
 
 	if err != nil {
-		return &models.User{}, err
+		return &models.User{}, custom_errors.NewInternalError(err.Error())
 	}
 
 	return userToLogin, nil
@@ -186,7 +206,11 @@ func (mr *MongoUserRepository) ReplaceUser(newUser *models.User, id string) (mod
 
 	ObjectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return *newUser, err
+		customError := custom_errors.NewInvalidFormat(
+			"Invalid ID",
+			"id",
+		)
+		return *newUser, customError
 	}
 
 	newUser.ID = ObjectId
@@ -197,14 +221,23 @@ func (mr *MongoUserRepository) ReplaceUser(newUser *models.User, id string) (mod
 	}, newUser)
 
 	if response.Err() != nil {
-		return *newUser, response.Err()
+		if mongoErr, ok := response.Err().(mongo.WriteException); ok {
+			for _, writeErr := range mongoErr.WriteErrors {
+				if writeErr.Code == 11000 {
+					return *newUser, custom_errors.NewDuplicateInformation(
+						fmt.Sprintf("The email %s already exists", newUser.Email),
+					)
+				}
+			}
+		}
+		return *newUser, custom_errors.NewInternalError(response.Err().Error())
 	}
 
 	oldUser := new(models.User)
 	err = response.Decode(oldUser)
 
 	if err != nil {
-		return *newUser, err
+		return *newUser, custom_errors.NewInternalError(err.Error())
 	}
 
 	return *oldUser, err
@@ -232,7 +265,11 @@ func (mr *MongoUserRepository) UpdateUserById(newUser *models.User, id string) (
 	}
 
 	if len(updateData) == 0 {
-		return newUser, fmt.Errorf("NO FIELD TO UPDATE")
+		customError := custom_errors.NewInvalidFormat(
+			"NO FIELD TO UPDATE",
+			"newUser",
+		)
+		return newUser, customError
 	}
 
 	update := bson.M{
@@ -250,7 +287,16 @@ func (mr *MongoUserRepository) UpdateUserById(newUser *models.User, id string) (
 	err = mr.collectionUsers.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(oldUser)
 
 	if err != nil {
-		return newUser, err
+		if mongoErr, ok := err.(mongo.WriteException); ok {
+			for _, writeErr := range mongoErr.WriteErrors {
+				if writeErr.Code == 11000 {
+					return newUser, custom_errors.NewDuplicateInformation(
+						fmt.Sprintf("The email %s already exists", newUser.Email),
+					)
+				}
+			}
+		}
+		return newUser, custom_errors.NewInternalError(err.Error())
 	}
 
 	return oldUser, nil
@@ -262,7 +308,11 @@ func (mr *MongoUserRepository) UpdateUserById(newUser *models.User, id string) (
 func (mr *MongoUserRepository) DeleteUserById(id string) (*models.User, error) {
 	ObjectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		customError := custom_errors.NewInvalidFormat(
+			"Invalid ID",
+			"id",
+		)
+		return nil, customError
 	}
 
 	update := bson.M{
@@ -281,7 +331,11 @@ func (mr *MongoUserRepository) DeleteUserById(id string) (*models.User, error) {
 
 	err = mr.collectionUsers.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(deletedUser)
 
-	return deletedUser, err
+	if err != nil {
+		return nil, custom_errors.NewInternalError(err.Error())
+	}
+
+	return deletedUser, nil
 }
 
 var _ dataccess.IUserRepository = (*MongoUserRepository)(nil)

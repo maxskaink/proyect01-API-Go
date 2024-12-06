@@ -32,22 +32,12 @@ func (clientC *ClientControllers) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := newUser.ValidateToCreate(); err != nil {
-		return c.Status(400).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    400,
-			TypeError: "Invalid data",
-		})
+	userCreated, err := clientC.UserService.CreateUser(newUser)
+
+	if err != nil {
+		return ResponseError(err, c)
 	}
 
-	userCreated, err := clientC.UserService.CreateUser(newUser)
-	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
-	}
 	return c.Status(201).JSON(userCreated)
 }
 
@@ -78,11 +68,7 @@ func (clientC *ClientControllers) GetAllUsers(c *fiber.Ctx) error {
 	totalUsers, err := clientC.UserService.GetTotalUsers()
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	} else if totalUsers == 0 {
 		return c.Status(404).JSON(dto.Error{
 			Message:   "No users found",
@@ -103,11 +89,7 @@ func (clientC *ClientControllers) GetAllUsers(c *fiber.Ctx) error {
 
 	users, err := clientC.UserService.GetAllUsers(page, per_page)
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 
 	//Cremos la respuesta
@@ -144,11 +126,7 @@ func (clientC *ClientControllers) LogInUser(c *fiber.Ctx) error {
 	token, err := clientC.UserService.LogInUser(credential.Email, credential.Password)
 
 	if err != nil {
-		return c.Status(401).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    401,
-			TypeError: "Unauthorized",
-		})
+		return ResponseError(err, c)
 	}
 
 	return c.Status(200).JSON(fiber.Map{
@@ -167,11 +145,7 @@ func (clientC *ClientControllers) GetUserbyID(c *fiber.Ctx) error {
 	foundUser, err := clientC.UserService.GetUserByID(idToSearch)
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 
 	if foundUser.Email != c.Locals("email") {
@@ -204,11 +178,7 @@ func (clientC *ClientControllers) UpdateUser(c *fiber.Ctx) error {
 	userDB, err := clientC.UserService.GetUserByID(idStr)
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 
 	if userDB.Email != c.Locals("email") {
@@ -222,11 +192,7 @@ func (clientC *ClientControllers) UpdateUser(c *fiber.Ctx) error {
 	oldUser, err := clientC.UserService.ReplaceUser(newUser, idStr)
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 	return c.Status(200).JSON(fiber.Map{
 		"status":  "ok",
@@ -252,11 +218,7 @@ func (clientC *ClientControllers) PatchUser(c *fiber.Ctx) error {
 	userDB, err := clientC.UserService.GetUserByID(idStr)
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 
 	if userDB.Email != c.Locals("email") {
@@ -270,11 +232,7 @@ func (clientC *ClientControllers) PatchUser(c *fiber.Ctx) error {
 	oldUser, err := clientC.UserService.UpdateUserById(newUser, idStr)
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 	oldUser.Password = ""
 
@@ -289,11 +247,7 @@ func (clientC *ClientControllers) DeleteUser(c *fiber.Ctx) error {
 
 	userDB, err := clientC.UserService.GetUserByID(idStr)
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error getting user",
-		})
+		return ResponseError(err, c)
 	}
 
 	if userDB.Email != c.Locals("email") {
@@ -307,11 +261,7 @@ func (clientC *ClientControllers) DeleteUser(c *fiber.Ctx) error {
 	deletedUser, err := clientC.UserService.DeleteUserById(idStr)
 
 	if err != nil {
-		return c.Status(500).JSON(dto.Error{
-			Message:   err.Error(),
-			Status:    500,
-			TypeError: "Internal error",
-		})
+		return ResponseError(err, c)
 	}
 
 	return c.Status(200).JSON(deletedUser)
